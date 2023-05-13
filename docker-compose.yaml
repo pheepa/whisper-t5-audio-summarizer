@@ -1,0 +1,49 @@
+version: '3'
+services:
+  app:
+    container_name: stenotrack-container
+    build: .
+    command: python main.py
+    environment:
+      RMQ_USER: rmuser
+      RMQ_PASSWORD: rmpassword
+      RMQ_HOST: rabbitmq
+      RMQ_PORT: 5672
+      API_URI: http://localhost:5005
+      WHISPER_PATH: models/whisper-base
+      T5_PATH: models/t5-base-jira-pubmed-finetuned
+      MAX_SOURCE_LENGTH: 2048
+      MAX_TARGET_LENGTH: 256
+      DEVICE: cpu
+    volumes:
+      - .:/code
+    networks:
+      - es-net
+    ports:
+      - "80:80"
+    depends_on:
+      - rabbitmq
+
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:3.11-management-alpine
+    hostname: rabbitmq
+    networks:
+      es-net:
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    environment:
+      RABBITMQ_DEFAULT_USER: rmuser
+      RABBITMQ_DEFAULT_PASS: rmpassword
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "rabbitmq", "5672" ]
+      interval: 1s
+      retries: 5
+
+
+networks:
+  es-net:
+    driver: bridge
+
+
